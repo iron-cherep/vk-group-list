@@ -60,7 +60,7 @@ class Api {
         .filter(item => !(typeof item === 'undefined' || item.deactivated))
         .map(await this.parseUserData);
 
-      Promise.all(parsedUsers).then(console.log);
+      Promise.all(parsedUsers).then(data => xls(data, `Group${id}`));
     } catch (e) {
       console.log(e);
     }
