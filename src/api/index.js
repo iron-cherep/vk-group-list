@@ -4,7 +4,7 @@ import getAge from '../helpers/getAge';
 
 class Api {
   constructor() {
-    this.queue = new PromiseThrottle({ requestsPerSecond: 1 });
+    this.queue = new PromiseThrottle({ requestsPerSecond: 2 });
 
     this.parseUserData = this.parseUserData.bind(this);
   }
@@ -58,7 +58,7 @@ class Api {
       const usersInfo = await this.getUsersInfo(users.items, userFields);
       const parsedUsers = usersInfo
         .filter(item => !(typeof item === 'undefined' || item.deactivated))
-        .map(this.parseUserData);
+        .map(await this.parseUserData);
 
       Promise.all(parsedUsers).then(console.log);
     } catch (e) {
@@ -95,20 +95,20 @@ class Api {
     const result = {
       url: `https://vk.com/${item.domain}`,
       name: `${item.first_name} ${item.last_name}`,
+      age: (item.bdate) ? (getAge(item.bdate) || '') : '',
+      city: (item.city) ? item.city.title : '',
+      university: (item.university) ? item.university_name : '',
+      faculty: (item.faculty) ? item.faculty_name : '',
     };
-
-    if (item.bdate) result.age = getAge(item.bdate);
-    if (item.city) result.city = item.city.title;
-    if (item.university) result.university = item.university_name;
-    if (item.faculty) result.faculty = item.faculty_name;
 
     if (item.career) {
       if (!!item.career[0] && !!item.career[0].group_id) {
-        await this.getGroupInfo(item.career[0].group_id)
-          .then((response) => {
-            result.job = `${response[0].name} (ссылка: https://vk.com/${response[0].screen_name})`;
-          })
-          .catch(console.log);
+        try {
+          const jobInfo = await this.getGroupInfo(item.career[0].group_id);
+          result.job = `${jobInfo[0].name} (ссылка: https://vk.com/${jobInfo[0].screen_name})`;
+        } catch (e) {
+          console.log(e);
+        }
       } else if (!!item.career[0] && item.career[0].company) {
         result.job = item.career[0].company;
       }
