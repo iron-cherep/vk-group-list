@@ -20,9 +20,15 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>React App</title>
-    <script src="https://vk.com/js/api/openapi.js?154" type="text/javascript"></script>
+    <script src="//vk.com/js/api/openapi.js" type="text/javascript"></script>
   </head>
   <body>
+    <script type="text/javascript">
+      VK.init({
+        apiId: 6468500,
+        status: true
+      });
+    </script>
     <noscript>
       You need to enable JavaScript to run this app.
     </noscript>
