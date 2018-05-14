@@ -1,121 +1,77 @@
 import PromiseThrottle from 'promise-throttle';
-import xls from '../xls';
-import getAge from '../helpers/getAge';
+
+import { VK_API_REQUESTS_PER_SECOND } from '../constants/API';
+import registerError from '../helpers/registerError';
+import Request from './Request';
 
 class Api {
   constructor() {
-    this.queue = new PromiseThrottle({ requestsPerSecond: 2 });
-
-    this.parseUserData = this.parseUserData.bind(this);
+    this.initialized = false;
   }
 
-  async init() {
-    let status;
+  /**
+   * Метод для инициализации api. Если аутентификация уже произведена при прошлых вызовах,
+   * возвращает объект авторизованного api, иначе начинает процедуру аутентификации.
+   *
+   * @returns {Promise<Api>}
+   */
+  init() {
+    return (this.initialized) ? Promise.resolve(this) : this.auth();
+  }
 
+  /**
+   * Производит процедуру авторизации и возвращает инициализированный объект.
+   *
+   * @returns {Promise<Api>}
+   */
+  async auth() {
     try {
-      const VK = await this.checkVKApi();
-      const user = await this.login(VK);
+      this.VK = await Api.checkVKApi();
+      this.user = await Api.login(this.VK);
+      this.requestsQueue = new PromiseThrottle({ requestsPerSecond: VK_API_REQUESTS_PER_SECOND });
+      this.request = new Request(this.VK, this.requestsQueue);
 
-      this.VK = VK;
-
-      if (user) status = [true, 'Пользователь успешно авторизован!'];
-      else status = [false, 'Ошибка авторизации'];
-    } catch (e) {
-      console.log(e);
+      this.initialized = true;
+    } catch (error) {
+      registerError({ category: 'Ошибка при инициализации api vk', error });
     }
 
-    return status;
+    return this;
   }
 
-  checkVKApi() {
+  /**
+   * Проверяет наличие объекта VK в глобальной области видимости.
+   * Проверяет наличие объекта VK в глобальной области видимости.
+   *
+   * @returns {*}
+   */
+  static checkVKApi() {
     if (window.VK) return window.VK;
-    throw new Error('Ошибка: openapi.js не подключен на странице');
+    throw new Error('Ошибка: openapi.js не подключен на странице.');
   }
 
-  login(VK) {
-    if (VK._userStatus !== 'connected') {
-      return new Promise((resolve, reject) => {
-        VK.Auth.login((response) => {
-          if (response.session) {
-            resolve(response.session.user);
-          } else {
-            reject(new Error('Ошибка авторизации'));
-          }
-        });
-      });
-    } else {
-      return new Promise((resolve) => {
-        resolve(true);
-      });
+  /**
+   * Производит авторизацию пользователя.
+   *
+   * @param VK
+   * @returns {Promise<*>}
+   */
+  static login(VK) {
+    if (VK._userStatus === 'connected') { // eslint-disable-line no-underscore-dangle
+      return Promise.resolve(this.user);
     }
-  }
 
-  async getGroupList(id) {
-    const userFields = ['bdate', 'city', 'photo_50', 'domain', 'education', 'career'];
-
-    try {
-      const users = await this.getGroupUsers(id);
-      const usersInfo = await this.getUsersInfo(users.items, userFields);
-      const parsedUsers = usersInfo
-        .filter(item => !(typeof item === 'undefined' || item.deactivated))
-        .map(await this.parseUserData);
-
-      Promise.all(parsedUsers).then(data => xls(data, `Group${id}`));
-    } catch (e) {
-      console.log(e);
-    }
-  }
-
-  async request(action, options) {
-    const optionsWithVersion = { ...options, v: '5.73' };
-
-    return this.queue.add(() => {
-      return new Promise((resolve, reject) => {
-        this.VK.Api.call(action, optionsWithVersion, (response) => {
-          if (response.response) return resolve(response.response);
-          reject(response);
-        });
-      });
-    }, { weight: 1 });
-  }
-
-  getGroupUsers(id) {
-    return this.request('groups.getMembers', { group_id: id });
-  }
-
-  getUsersInfo(ids, fields = null) {
-    return this.request('users.get', { user_ids: ids, fields });
-  }
-
-  getGroupInfo(id) {
-    return this.request('groups.getById', { group_id: id });
-  }
-
-  async parseUserData(item) {
-    const result = {
-      url: `https://vk.com/${item.domain}`,
-      name: `${item.first_name} ${item.last_name}`,
-      age: (item.bdate) ? (getAge(item.bdate) || '') : '',
-      city: (item.city) ? item.city.title : '',
-      university: (item.university) ? item.university_name : '',
-      faculty: (item.faculty) ? item.faculty_name : '',
-    };
-
-    if (item.career) {
-      if (!!item.career[0] && !!item.career[0].group_id) {
-        try {
-          const jobInfo = await this.getGroupInfo(item.career[0].group_id);
-          result.job = `${jobInfo[0].name} (ссылка: https://vk.com/${jobInfo[0].screen_name})`;
-        } catch (e) {
-          console.log(e);
+    return new Promise((resolve, reject) => {
+      VK.Auth.login((response) => {
+        if (response.session) {
+          resolve(response.session.user);
+        } else {
+          reject(new Error('Ошибка авторизации'));
         }
-      } else if (!!item.career[0] && item.career[0].company) {
-        result.job = item.career[0].company;
-      }
-    }
-
-    return result;
+      });
+    });
   }
 }
 
-export default Api;
+const api = new Api();
+export default api;
