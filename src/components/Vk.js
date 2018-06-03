@@ -2,44 +2,56 @@ import React, { Component } from 'react';
 import api from '../api';
 import xls from '../helpers/xls';
 
+import Form from './Form';
+
 class Vk extends Component {
   constructor(props) {
     super(props);
 
     this.vk = api;
+    this.setAlert = this.props.setAlert;
+    this.setLoader = this.props.setLoader;
     this.state = {
-      apiStatus: { auth: false, status: 'Подключение к API Вконтакте...' },
-      loading: false,
+      apiAuth: false,
     };
+    this.setAlert('Подключение к API Вконтакте...');
 
     this.makeRequest = this.makeRequest.bind(this);
   }
 
   componentWillMount() {
     this.vk.init()
-      .then(() => this.setState({ apiStatus: { auth: true, status: 'Пользователь успешно авторизован!' } }))
+      .then(() => {
+        this.setAlert('Пользователь успешно авторизован!')
+        this.setState({ apiAuth: true })
+      })
       .catch((e) => {
         console.error(e);
-        this.setState({ apiStatus: { auth: false, status: 'Ошибка авторизации!' } });
+        this.setAlert('Ошибка при авторизации!')
+        this.setState({ apiAuth: false });
       });
   }
 
-  makeRequest() {
-    this.setState({ loading: true });
-    this.vk.request.getGroupList(2176573, ['bdate', 'city', 'photo_50', 'domain', 'education', 'career'])
+  makeRequest(groupId, userFields) {
+    this.setLoader(true);
+    this.vk.request.getGroupList(groupId, userFields)
       .then((data) => {
-        this.setState({ loading: false });
-        xls(data, `Group${2176573}.xlsx`);
+        this.setLoader(false);
+        xls(data, `Group${groupId}`);
       })
-      .catch(console.error);
+      .catch((e) => {
+        console.error(e);
+        this.setAlert('Ошибка при выполнении запроса!');
+      });
   }
 
   render() {
     return (
       <section>
-        <div>{this.state.apiStatus.status}</div>
-        <div>{this.state.loading && 'Загрузка...'}</div>
-        {(this.state.apiStatus.auth) && <button onClick={this.makeRequest}>Получить данные</button>}
+        {
+          this.state.apiAuth &&
+          <Form makeRequest={this.makeRequest} />
+        }
       </section>
     );
   }

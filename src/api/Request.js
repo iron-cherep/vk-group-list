@@ -32,7 +32,7 @@ class Request {
    *
    * @param id
    * @param userFields
-   * @returns {Promise<[any]>}
+   * @returns {Promise<*>}
    */
   async getGroupList(id, userFields) {
     const users = await this.getGroupUsers(id);
