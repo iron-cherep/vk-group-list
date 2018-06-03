@@ -2,6 +2,7 @@
   "name": "vk-react",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://iron-cherep.github.io/vk-group-list",
   "dependencies": {
     "@material-ui/core": "^1.0.0",
     "moment": "^2.22.1",
