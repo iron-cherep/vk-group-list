@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/iron-cherep/vk-group-list.svg?branch=master)](https://travis-ci.org/iron-cherep/vk-group-list)
+
 Приложение доступно на [github-pages](https://iron-cherep.github.io/vk-group-list)
 
 ## TODO
