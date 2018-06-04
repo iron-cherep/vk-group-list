@@ -1,9 +1,9 @@
-const moment = require('moment');
+import moment from 'moment';
 
 export default function getAge(bdayString) {
   const separatedDates = bdayString.split('.');
 
-  if (separatedDates.length !== 3) return;
+  if (separatedDates.length !== 3) return null;
 
   const parsedDates = {
     years: separatedDates[2],
@@ -11,6 +11,7 @@ export default function getAge(bdayString) {
     days: separatedDates[0],
   };
   const year = moment(parsedDates);
+  const age = moment().diff(year, 'years');
 
-  return moment().diff(year, 'years');
+  return age;
 }

@@ -1,27 +1,14 @@
 import React, { Component } from 'react';
-import styled from 'styled-components';
+import PropTypes from 'prop-types';
 import {
-  Paper,
-  FormControl,
   InputLabel,
   Input,
   Select,
   Button,
 } from '@material-ui/core';
-
+import StyledPaper from './ui/StyledPaper';
+import StyledFormControl from './ui/StyledFormControl';
 import { USER_FIELDS } from '../constants/API';
-
-const StyledFormControl = styled(FormControl)`
-  width: 100%;
-  margin-bottom: 1rem !important;
-`;
-
-const StyledPaper = styled(Paper)`
-  width: 600px;
-  max-width: 100%;
-  margin: 100px auto;
-  padding: 2rem 2rem 1rem;
-`;
 
 class Form extends Component {
   constructor(props) {
@@ -33,7 +20,6 @@ class Form extends Component {
     this.state = {
       groupId: null,
       userFields: [],
-      errors: [],
     };
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -63,23 +49,22 @@ class Form extends Component {
         <StyledFormControl>
           <InputLabel htmlFor="user-fields">Информация</InputLabel>
           <Select id="user-fields" onChange={this.handleChange} name="userFields" multiple value={this.state.userFields}>
-            {this.userFieldsAvailable.map(field => <option value={field[0]} key={field[0]}>{field[1]}</option>)}
+            {this.userFieldsAvailable.map(field => (
+              <option value={field[0]} key={field[0]}>{field[1]}</option>
+            ))}
           </Select>
         </StyledFormControl>
 
         <StyledFormControl>
           <Button variant="raised" color="primary" onClick={this.handleSubmit}>Получить данные</Button>
         </StyledFormControl>
-
-        <ul>
-          {
-            this.state.errors && 
-            this.state.errors.map(error => <li>{error}</li>)
-          }
-        </ul>
       </StyledPaper>
     );
   }
 }
+
+Form.propTypes = {
+  makeRequest: PropTypes.func.isRequired,
+};
 
 export default Form;

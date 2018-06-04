@@ -20,7 +20,7 @@ class Request {
 
     return this.queue.add(() => new Promise((resolve, reject) => {
       this.VK.Api.call(action, optionsWithVersion, (response) => {
-        if (response.response) return resolve(response.response);
+        if (response.response) resolve(response.response);
         reject(response);
       });
     }), { weight: 1 });
