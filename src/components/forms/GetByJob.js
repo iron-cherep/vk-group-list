@@ -3,35 +3,26 @@ import PropTypes from 'prop-types';
 import {
   Input,
   InputLabel,
-  Button,
+  InputAdornment,
   IconButton,
-  Table,
-  TableBody,
-  TableRow,
-  TableCell,
 } from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
+import AddIcon from '@material-ui/icons/Add';
+import SearchStringsTable from './partials/SearchStringsTable';
 import StyledFormControl from '../ui/StyledFormControl';
 
 class GetByJob extends Component {
-  static propTypes = {
-    makeRequest: PropTypes.func.isRequired,
-  };
-
   constructor(props) {
     super(props);
 
+    this.getGlobalFormState = this.props.getGlobalFormState;
+    this.setGlobalFormState = this.props.setGlobalFormState;
+
+    this.setGlobalFormState({ searchStrings: [] });
     this.state = {
       currentSearchString: '',
-      searchStrings: [],
+      localSearchStrings: [], // @TODO убрать дублирующий state
     };
-
-    this.makeRequest = this.props.makeRequest;
   }
-
-  handleChange = (e) => {
-    this.setState({ [e.target.name]: e.target.value });
-  };
 
   handleKeypress = (e) => {
     if (e.key !== 'Enter') return;
@@ -40,29 +31,34 @@ class GetByJob extends Component {
 
   addString = () => {
     const string = this.state.currentSearchString;
-    const { searchStrings } = this.state;
+    const { searchStrings } = this.getGlobalFormState();
 
     if (string === '' || searchStrings.indexOf(string) !== -1) return;
 
-    this.setState({
+    this.setGlobalFormState({
       searchStrings: [...searchStrings, string],
+    });
+    this.setState({
       currentSearchString: '',
+      localSearchStrings: [...searchStrings, string],
     });
   };
 
   deleteString = (string) => {
-    const { searchStrings } = this.state;
+    const { searchStrings } = this.getGlobalFormState();
     const filteredStrings = searchStrings.filter(item => item !== string);
 
-    this.setState({ searchStrings: filteredStrings });
+    this.setGlobalFormState({ searchStrings: filteredStrings });
+    this.setState({ localSearchStrings: filteredStrings });
   };
 
-  handleSubmit = () => {
-    this.makeRequest(this.state.groupId, this.state.userFields);
+  handleChange = (e) => {
+    this.setState({ [e.target.name]: e.target.value });
   };
 
   render() {
-    const haveSearchStrings = this.state.searchStrings.length > 0;
+    const searchStrings = this.state.localSearchStrings;
+    const haveSearchStrings = (searchStrings && searchStrings.length > 0);
 
     return (
       <Fragment>
@@ -74,38 +70,33 @@ class GetByJob extends Component {
             value={this.state.currentSearchString}
             onChange={this.handleChange}
             onKeyPress={this.handleKeypress}
+            endAdornment={
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="Добавить строку"
+                  onClick={this.addString}
+                >
+                  <AddIcon />
+                </IconButton>
+              </InputAdornment>
+            }
           />
         </StyledFormControl>
 
-        <StyledFormControl>
-          <Button variant="raised" color="primary" onClick={this.addString}>Добавить</Button>
-        </StyledFormControl>
-
         {haveSearchStrings &&
-          <StyledFormControl>
-            <Button variant="raised" color="primary" onClick={this.handleSubmit}>Начать поиск</Button>
-          </StyledFormControl>
-        }
-
-        {haveSearchStrings &&
-          <Table>
-            <TableBody>
-              {this.state.searchStrings.map(string => (
-                <TableRow key={string}>
-                  <TableCell>{string}</TableCell>
-                  <TableCell width="20px">
-                    <IconButton onClick={() => this.deleteString(string)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <SearchStringsTable
+          deleteString={this.deleteString}
+          searchStrings={this.state.localSearchStrings}
+        />
         }
       </Fragment>
     );
   }
 }
+
+GetByJob.propTypes = {
+  getGlobalFormState: PropTypes.func.isRequired,
+  setGlobalFormState: PropTypes.func.isRequired,
+};
 
 export default GetByJob;
