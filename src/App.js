@@ -59,15 +59,16 @@ class App extends Component {
     this.setState({ vk: object });
   }
 
-  makeRequest(groupId, userFields) {
+  makeRequest(requestType, userFields, params) {
     const { vk } = this.state;
     if (!vk) return;
 
     this.setLoader(true);
-    vk.request.getGroupList(groupId, userFields)
+
+    vk.request.get(requestType, userFields, params)
       .then((data) => {
         this.setLoader(false);
-        xls(data, `Group${groupId}`);
+        xls(data, 'vkUsersTable');
       })
       .catch((e) => {
         console.error(e);
@@ -78,30 +79,29 @@ class App extends Component {
   render() {
     return (
       <section>
-        {
-          this.state.alerts && this.state.alerts.map(alert => (
-            <Snackbar
-              open
-              key={alert.id}
-              anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-              message={alert.alert}
-            />
+        {this.state.alerts && this.state.alerts.map(alert => (
+          <Snackbar
+            open
+            key={alert.id}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            message={alert.alert}
+          />
           ))
         }
-        {
-          this.state.loading &&
+
+        {this.state.loading &&
           <LoaderWrapper>
             <CircularProgress />
           </LoaderWrapper>
         }
-        {
-          this.state.authStatus
-            ? <Form makeRequest={this.makeRequest} />
-            : <Login
-              setAlert={this.setAlert}
-              setAuthStatus={this.setAuthStatus}
-              setVkObject={this.setVkObject}
-            />
+
+        {this.state.authStatus
+          ? <Form makeRequest={this.makeRequest} />
+          : <Login
+            setAlert={this.setAlert}
+            setAuthStatus={this.setAuthStatus}
+            setVkObject={this.setVkObject}
+          />
         }
       </section>
     );

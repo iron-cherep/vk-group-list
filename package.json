@@ -5,6 +5,7 @@
   "homepage": "https://iron-cherep.github.io/vk-group-list",
   "dependencies": {
     "@material-ui/core": "^1.0.0",
+    "@material-ui/icons": "^1.1.0",
     "moment": "^2.22.1",
     "promise-throttle": "^1.0.0",
     "prop-types": "^15.6.1",
