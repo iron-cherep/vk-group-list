@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { VK_API_VERSION } from '../constants/API';
 import * as requestTypes from '../constants/request-types';
 import parseUserData from '../helpers/parseUserData';
@@ -62,7 +63,11 @@ class Request {
    */
   async getGroupList(id, fields) {
     const users = await this.getGroupUsers(id);
-    const usersInfo = await this.getUsersInfo(users.items, fields);
+    console.log('users: ', users.length);
+
+    const usersInfo = _.flatten(await this.getUsersInfo(users, fields));
+    console.log(usersInfo);
+
     const parsedUsers = usersInfo.map(await parseUserData);
 
     return Promise.all(parsedUsers);
@@ -99,8 +104,23 @@ class Request {
    * @param id - id сообщества
    * @returns {Promise<*>}
    */
-  getGroupUsers(id) {
-    return this.request('groups.getMembers', { group_id: id });
+  async getGroupUsers(id) {
+    const requestOptions = { group_id: id, offset: 0 };
+    let groupUsersNumber = 1;
+    let receivedGroupUsers = [];
+
+    while (requestOptions.offset < groupUsersNumber) {
+      const response = await this.request('groups.getMembers', requestOptions); // eslint-disable-line no-await-in-loop
+
+      // Задаём сдвиг меньше 1000, чтобы не потерять пользователей
+      // при изменении списка участников сообщества во время выполнения запроса
+      requestOptions.offset += 900;
+      receivedGroupUsers = receivedGroupUsers.concat(response.items);
+      groupUsersNumber = response.count;
+    }
+
+    // Возвращаем только уникальных пользователей
+    return receivedGroupUsers.filter((user, index, array) => array.indexOf(user) === index);
   }
 
   /**
@@ -110,8 +130,12 @@ class Request {
    * @param fields - дополнительные поля, включаемые в объект
    * @returns {Promise<*>}
    */
-  getUsersInfo(ids, fields = null) {
-    return this.request('users.get', { user_ids: ids, fields });
+  async getUsersInfo(ids, fields = null) {
+    const requests = _.chunk(ids, 500).map(async (currentChunk) => {
+      return this.request('users.get', { user_ids: currentChunk, fields });
+    });
+
+    return Promise.all(requests);
   }
 
   /**
