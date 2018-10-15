@@ -131,9 +131,7 @@ class Request {
    * @returns {Promise<*>}
    */
   async getUsersInfo(ids, fields = null) {
-    const requests = _.chunk(ids, 500).map(async (currentChunk) => {
-      return this.request('users.get', { user_ids: currentChunk, fields });
-    });
+    const requests = _.chunk(ids, 500).map(async currentChunk => this.request('users.get', { user_ids: currentChunk, fields }));
 
     return Promise.all(requests);
   }
